@@ -20,6 +20,20 @@ body {
   border-bottom: 1px solid var(--line);
   background: #fff;
 }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand h1 {
+  margin: 0;
+}
+.brand-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  object-fit: cover;
+}
 .container {
   max-width: 980px;
   margin: 20px auto;
