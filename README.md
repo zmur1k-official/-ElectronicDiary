@@ -3,60 +3,42 @@
 ## Русская версия
 
 ### 1. О проекте
-`School Diary API` — учебный backend на Go для школьного дневника с простым web-интерфейсом.
+`School Diary API` — учебный backend на Go для электронного дневника.
 
-Поддерживаются роли:
+Роли:
 - `admin`
 - `teacher`
 - `student`
 
-Ключевые возможности:
-- регистрация и логин пользователей;
-- просмотр профиля текущего пользователя;
+Основные возможности:
+- регистрация и вход пользователей;
+- авторизация по Bearer-токену;
 - управление пользователями (админ);
 - загрузка фото расписания по классу (админ);
-- получение расписания (фото) для ученика его класса;
-- добавление уроков/оценок/домашки (учитель);
-- просмотр оценок и домашки (ученик).
+- просмотр фото расписания своего класса (ученик);
+- постановка оценок (учитель);
+- табличный просмотр оценок для ученика;
+- табличный журнал учителя по предмету.
 
 ### 2. Технологии
-- Go (стандартная библиотека, без внешних зависимостей)
-- HTTP сервер на `net/http`
-- In-memory storage (данные хранятся в памяти процесса)
-- Статический frontend в папке `static/`
+- Go (стандартная библиотека);
+- `net/http`;
+- in-memory хранилище (данные в памяти процесса);
+- статический frontend (`static/`).
 
-### 3. Архитектура и структура проекта
-Проект разделен по слоям и ролям:
+### 3. Архитектура
+Структура проекта сохранена модульной:
 
-- `server.go`  
-  Точка входа, конфигурация порта, регистрация маршрутов.
-
-- `types.go`  
-  Доменные типы (`User`, `SchedulePhoto`, `Grade`, `Homework`, роли и т.д.).
-
-- `storage.go`  
-  In-memory хранилище и CRUD-операции.
-
-- `auth.go`  
-  Хеширование пароля и middleware авторизации по Bearer токену.
-
-- `handlers_auth.go`  
-  Публичные и общие auth-endpoints (`register`, `login`, `me`).
-
-- `handlers_admin.go`  
-  Админские endpoints.
-
-- `handlers_teacher.go`  
-  Endpoints для учителя.
-
-- `handlers_student.go`  
-  Endpoints для ученика.
-
-- `utils.go`  
-  Общие helper-функции (`writeJSON`, `writeError`, `normalizeClassName`).
-
-- `static/`  
-  Встроенный фронтенд (HTML/CSS/JS).
+- `server.go` — запуск сервера и маршруты;
+- `types.go` — модели данных;
+- `storage.go` — потокобезопасное in-memory хранилище;
+- `auth.go` — auth middleware и хеширование пароля;
+- `handlers_auth.go` — публичные/auth endpoints;
+- `handlers_admin.go` — endpoints администратора;
+- `handlers_teacher.go` — endpoints учителя;
+- `handlers_student.go` — endpoints ученика;
+- `utils.go` — общие helper-функции;
+- `static/` — клиентская часть.
 
 ### 4. Запуск
 Из корня проекта:
@@ -65,429 +47,215 @@
 go run .
 ```
 
-По умолчанию сервер запускается на `http://localhost:8080`.
+По умолчанию сервер: `http://localhost:8080`.
 
-С другим портом:
+Другой порт:
 
 ```powershell
 $env:PORT="18080"; go run .
 ```
 
-### 5. Дефолтный пользователь
-При старте автоматически создается админ:
-
+### 5. Дефолтный админ
 - email: `admin@school.local`
 - password: `admin123`
 
 ### 6. Авторизация
-Защищенные endpoints ожидают заголовок:
+Для защищенных endpoints:
 
 ```http
 Authorization: Bearer <token>
 ```
 
-Токен выдается в ответе `POST /api/login`.
+Токен выдается через `POST /api/login`.
 
-### 7. Модель данных
+### 7. Ключевые модели
 
-#### 7.1 User
-- `id`
-- `fullName`
-- `email`
-- `role` (`admin|teacher|student`)
-- `className` (только для ученика)
+#### User
+- `id`, `fullName`, `email`, `role`, `className`
 
-#### 7.2 SchedulePhoto
-- `className`
-- `contentType` (например, `image/jpeg`)
-- `imageData` (`data:<mime>;base64,...`)
+#### Grade
+- `id`, `studentId`, `subject`, `value`, `comment`, `teacherId`, `date`
 
-#### 7.3 Grade
-- `id`, `studentId`, `subject`, `value (1..5)`, `comment`, `teacherId`, `date`
-
-#### 7.4 Homework
-- `id`, `className`, `subject`, `description`, `dueDate`, `teacherId`
+#### SchedulePhoto
+- `className`, `contentType`, `imageData`
 
 ### 8. API
 
 Базовый URL: `http://localhost:8080`
 
-#### 8.1 Public/Auth
-
-1. `POST /api/register`  
-Создать пользователя.
-
-Пример body:
-
-```json
-{
-  "fullName": "Иван Петров",
-  "email": "ivan@student.local",
-  "password": "123456",
-  "role": "student",
-  "className": "7A"
-}
-```
-
-2. `POST /api/login`  
-Логин и получение токена.
-
-```json
-{
-  "email": "admin@school.local",
-  "password": "admin123"
-}
-```
-
-3. `GET /api/me`  
-Информация о текущем пользователе (нужен токен).
+#### 8.1 Auth/Public
+1. `POST /api/register`
+2. `POST /api/login`
+3. `GET /api/me`
 
 #### 8.2 Admin
-
-1. `GET /api/admin/users`  
-Список пользователей.
-
-2. `POST /api/admin/users`  
-Создание пользователя (аналогично `/api/register`).
-
-3. `DELETE /api/admin/users/{id}`  
-Удаление пользователя.
-
-4. `POST /api/admin/schedule/import`  
-Загрузка фото расписания для класса (`multipart/form-data`):
-- `className` (string, обязателен)
-- `file` (image/*, обязателен, до ~20MB)
-
-Ответ:
-
-```json
-{
-  "status": "imported",
-  "className": "7A"
-}
-```
-
-5. `DELETE /api/admin/schedule`  
-Очистка всех записей расписания и фото расписаний.
-
-6. `GET /api/admin/schedule/stats`  
-Статистика загруженных фото расписания по классам.
+1. `GET /api/admin/users`
+2. `POST /api/admin/users`
+3. `DELETE /api/admin/users/{id}`
+4. `POST /api/admin/schedule/import` (`multipart/form-data`: `className`, `file:image/*`)
+5. `DELETE /api/admin/schedule`
+6. `GET /api/admin/schedule/stats`
 
 #### 8.3 Teacher
-
-1. `POST /api/teacher/schedule`  
-Добавить урок в расписание (структурные записи).
-
-2. `POST /api/teacher/grades`  
-Поставить оценку ученику.
-
-3. `POST /api/teacher/homework`  
-Добавить домашнее задание для класса.
-
-4. `GET /api/teacher/students`  
-Список учеников, отсортированный по классу.
+1. `POST /api/teacher/schedule`
+2. `GET /api/teacher/students`
+3. `GET /api/teacher/subject` — текущий закрепленный предмет учителя
+4. `POST /api/teacher/subject` — закрепить предмет:
+```json
+{ "subject": "Математика" }
+```
+5. `GET /api/teacher/grades/journal?from=YYYY-MM-DD&to=YYYY-MM-DD` — оценки учителя по его предмету за период
+6. `GET /api/teacher/grades?studentId=<id>` — оценки конкретного ученика
+7. `POST /api/teacher/grades` — поставить оценку:
+```json
+{
+  "studentId": 12,
+  "value": 5,
+  "comment": "Отлично",
+  "date": "2026-02-18"
+}
+```
+Важно: `subject` в этом запросе не передается, берется из закрепленного предмета учителя.
+8. `POST /api/teacher/homework`
 
 #### 8.4 Student
+1. `GET /api/student/schedule`
+2. `GET /api/student/grades`
+3. `GET /api/student/homework`
 
-1. `GET /api/student/schedule`  
-Вернет фото расписания для класса ученика:
-- `{}` если фото не найдено;
-- объект `SchedulePhoto`, если найдено.
+### 9. Таблицы оценок в UI
 
-2. `GET /api/student/grades`  
-Список оценок текущего ученика.
+#### Для ученика
+- таблица: строки — предметы;
+- столбцы — даты;
+- в ячейке — оценка;
+- при наведении на оценку отображается комментарий.
 
-3. `GET /api/student/homework`  
-Список домашнего задания для класса ученика.
+#### Для учителя
+- сначала учитель задает свой предмет;
+- таблица: первый столбец — ученики (уже отсортированы бэкендом по классам);
+- остальные столбцы — даты от `-7` до `+7` дней относительно текущей даты;
+- клик по ячейке открывает ввод оценки и комментария;
+- оценка сохраняется на выбранную дату.
 
-### 9. Примеры запросов (curl)
-
-#### 9.1 Логин
-```bash
-curl -X POST http://localhost:8080/api/login \
-  -H "Content-Type: application/json" \
-  -d "{\"email\":\"admin@school.local\",\"password\":\"admin123\"}"
-```
-
-#### 9.2 Импорт фото расписания для класса
-```bash
-curl -X POST http://localhost:8080/api/admin/schedule/import \
-  -H "Authorization: Bearer <TOKEN>" \
-  -F "className=7A" \
-  -F "file=@schedule_7a.jpg"
-```
-
-#### 9.3 Получить расписание ученика
-```bash
-curl http://localhost:8080/api/student/schedule \
-  -H "Authorization: Bearer <TOKEN>"
-```
-
-### 10. Нормализация className
-Сервер нормализует имя класса:
-- удаляет пробелы;
-- приводит к верхнему регистру;
-- заменяет похожие кириллические символы на латиницу (`А -> A`, `В -> B` и т.д.);
-- оставляет только `[0-9A-Z]`.
-
-Пример: `7 а` -> `7A`.
-
-### 11. Ограничения
-- Все данные хранятся в памяти и теряются при рестарте.
-- Нет БД и миграций.
-- Нет refresh-токенов/выхода из системы по API.
-- Нет ролевой иерархии кроме явной проверки в middleware.
-
-### 12. Идеи для развития
-- Подключить PostgreSQL/SQLite.
-- Добавить JWT с истечением срока и refresh.
-- Добавить unit/integration тесты.
-- Вынести сервисный слой между handlers и storage.
-- Добавить Swagger/OpenAPI.
+### 10. Ограничения
+- данные хранятся в памяти и пропадают при рестарте;
+- нет БД и миграций;
+- нет refresh-токенов.
 
 ---
 
 ## English Version
 
-### 1. About The Project
-`School Diary API` is a Go learning backend for a school diary with a simple web UI.
+### 1. About
+`School Diary API` is a Go learning backend for an electronic school diary.
 
-Supported roles:
+Roles:
 - `admin`
 - `teacher`
 - `student`
 
-Key features:
-- user registration and login;
-- current user profile endpoint;
+Features:
+- registration/login;
+- Bearer-token auth;
 - user management (admin);
-- schedule photo upload per class (admin);
-- schedule photo retrieval for a student’s class;
-- adding lessons/grades/homework (teacher);
-- viewing grades and homework (student).
+- class schedule photo upload (admin);
+- student schedule photo view;
+- teacher grading;
+- student grade table view;
+- teacher subject-based grade journal.
 
-### 2. Tech Stack
-- Go (standard library only, no external dependencies)
-- HTTP server with `net/http`
-- In-memory storage (data lives in process memory)
-- Static frontend in `static/`
+### 2. Stack
+- Go (standard library);
+- `net/http`;
+- in-memory storage;
+- static frontend in `static/`.
 
-### 3. Architecture and Project Structure
-The project is split by layers and roles:
-
-- `server.go`  
-  Entry point, port config, route registration.
-
-- `types.go`  
-  Domain types (`User`, `SchedulePhoto`, `Grade`, `Homework`, roles, etc.).
-
-- `storage.go`  
-  In-memory storage and CRUD operations.
-
-- `auth.go`  
-  Password hashing and Bearer-token auth middleware.
-
-- `handlers_auth.go`  
-  Public/shared auth endpoints (`register`, `login`, `me`).
-
-- `handlers_admin.go`  
-  Admin endpoints.
-
-- `handlers_teacher.go`  
-  Teacher endpoints.
-
-- `handlers_student.go`  
-  Student endpoints.
-
-- `utils.go`  
-  Shared helpers (`writeJSON`, `writeError`, `normalizeClassName`).
-
-- `static/`  
-  Built-in frontend (HTML/CSS/JS).
+### 3. Architecture
+- `server.go` — bootstrap + routes
+- `types.go` — domain models
+- `storage.go` — thread-safe storage
+- `auth.go` — auth middleware/password hashing
+- `handlers_auth.go` — auth/public endpoints
+- `handlers_admin.go` — admin endpoints
+- `handlers_teacher.go` — teacher endpoints
+- `handlers_student.go` — student endpoints
+- `utils.go` — helpers
+- `static/` — frontend
 
 ### 4. Run
-From the project root:
-
 ```powershell
 go run .
 ```
 
-Default address: `http://localhost:8080`.
+Default: `http://localhost:8080`
 
 Custom port:
-
 ```powershell
 $env:PORT="18080"; go run .
 ```
 
-### 5. Default User
-At startup, a default admin user is created:
-
+### 5. Default admin
 - email: `admin@school.local`
 - password: `admin123`
 
-### 6. Authorization
+### 6. Auth
 Protected endpoints require:
-
 ```http
 Authorization: Bearer <token>
 ```
 
-The token is returned by `POST /api/login`.
-
-### 7. Data Model
-
-#### 7.1 User
-- `id`
-- `fullName`
-- `email`
-- `role` (`admin|teacher|student`)
-- `className` (student only)
-
-#### 7.2 SchedulePhoto
-- `className`
-- `contentType` (e.g. `image/jpeg`)
-- `imageData` (`data:<mime>;base64,...`)
-
-#### 7.3 Grade
-- `id`, `studentId`, `subject`, `value (1..5)`, `comment`, `teacherId`, `date`
-
-#### 7.4 Homework
-- `id`, `className`, `subject`, `description`, `dueDate`, `teacherId`
+### 7. Main models
+- `User`
+- `Grade`
+- `SchedulePhoto`
 
 ### 8. API
-
 Base URL: `http://localhost:8080`
 
-#### 8.1 Public/Auth
-
-1. `POST /api/register`  
-Create a user.
-
-Example body:
-
-```json
-{
-  "fullName": "John Smith",
-  "email": "john@student.local",
-  "password": "123456",
-  "role": "student",
-  "className": "7A"
-}
-```
-
-2. `POST /api/login`  
-Login and receive token.
-
-```json
-{
-  "email": "admin@school.local",
-  "password": "admin123"
-}
-```
-
-3. `GET /api/me`  
-Current user profile (token required).
+#### 8.1 Auth/Public
+1. `POST /api/register`
+2. `POST /api/login`
+3. `GET /api/me`
 
 #### 8.2 Admin
-
-1. `GET /api/admin/users`  
-List users.
-
-2. `POST /api/admin/users`  
-Create a user (same as `/api/register`).
-
-3. `DELETE /api/admin/users/{id}`  
-Delete user.
-
-4. `POST /api/admin/schedule/import`  
-Upload schedule photo for a class (`multipart/form-data`):
-- `className` (string, required)
-- `file` (image/*, required, up to ~20MB)
-
-Response:
-
-```json
-{
-  "status": "imported",
-  "className": "7A"
-}
-```
-
-5. `DELETE /api/admin/schedule`  
-Clear all schedule entries and schedule photos.
-
-6. `GET /api/admin/schedule/stats`  
-Stats for uploaded schedule photos grouped by class.
+1. `GET /api/admin/users`
+2. `POST /api/admin/users`
+3. `DELETE /api/admin/users/{id}`
+4. `POST /api/admin/schedule/import` (`className` + `file:image/*`)
+5. `DELETE /api/admin/schedule`
+6. `GET /api/admin/schedule/stats`
 
 #### 8.3 Teacher
-
-1. `POST /api/teacher/schedule`  
-Add a lesson to structured schedule entries.
-
-2. `POST /api/teacher/grades`  
-Add grade for a student.
-
-3. `POST /api/teacher/homework`  
-Add homework for a class.
-
-4. `GET /api/teacher/students`  
-List students sorted by class.
+1. `POST /api/teacher/schedule`
+2. `GET /api/teacher/students`
+3. `GET /api/teacher/subject`
+4. `POST /api/teacher/subject`
+5. `GET /api/teacher/grades/journal?from=YYYY-MM-DD&to=YYYY-MM-DD`
+6. `GET /api/teacher/grades?studentId=<id>`
+7. `POST /api/teacher/grades` (subject is taken from teacher profile)
+8. `POST /api/teacher/homework`
 
 #### 8.4 Student
+1. `GET /api/student/schedule`
+2. `GET /api/student/grades`
+3. `GET /api/student/homework`
 
-1. `GET /api/student/schedule`  
-Returns schedule photo for the student’s class:
-- `{}` if not found;
-- `SchedulePhoto` object if found.
+### 9. Grade tables in UI
 
-2. `GET /api/student/grades`  
-Current student grades.
+#### Student
+- rows: subjects
+- columns: dates
+- cell: grade
+- hover on grade: comment tooltip
 
-3. `GET /api/student/homework`  
-Homework list for the student’s class.
+#### Teacher
+- teacher sets a fixed subject first
+- first column: students (already sorted by class from backend)
+- date columns: from `-7` to `+7` days around today
+- click a cell to enter grade + comment for that date
 
-### 9. Request Examples (curl)
-
-#### 9.1 Login
-```bash
-curl -X POST http://localhost:8080/api/login \
-  -H "Content-Type: application/json" \
-  -d "{\"email\":\"admin@school.local\",\"password\":\"admin123\"}"
-```
-
-#### 9.2 Upload schedule photo for class
-```bash
-curl -X POST http://localhost:8080/api/admin/schedule/import \
-  -H "Authorization: Bearer <TOKEN>" \
-  -F "className=7A" \
-  -F "file=@schedule_7a.jpg"
-```
-
-#### 9.3 Get student schedule
-```bash
-curl http://localhost:8080/api/student/schedule \
-  -H "Authorization: Bearer <TOKEN>"
-```
-
-### 10. `className` Normalization
-Server normalizes class name by:
-- removing spaces;
-- uppercasing;
-- replacing similar Cyrillic letters with Latin (`А -> A`, `В -> B`, etc.);
-- keeping only `[0-9A-Z]`.
-
-Example: `7 а` -> `7A`.
-
-### 11. Limitations
-- Data is in-memory and lost on restart.
-- No database or migrations.
-- No refresh tokens/logout API.
-- No role hierarchy beyond explicit middleware checks.
-
-### 12. Next Improvements
-- Add PostgreSQL/SQLite.
-- Add expiring JWT + refresh flow.
-- Add unit/integration tests.
-- Add service layer between handlers and storage.
-- Add Swagger/OpenAPI.
+### 10. Limitations
+- in-memory data (reset on restart)
+- no DB/migrations
+- no refresh tokens

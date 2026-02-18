@@ -22,7 +22,9 @@ func (s *Server) routes() *http.ServeMux {
 	mux.HandleFunc("/api/admin/schedule/stats", s.withAuth(s.handleAdminScheduleStats, RoleAdmin))
 
 	mux.HandleFunc("/api/teacher/schedule", s.withAuth(s.handleTeacherScheduleCreate, RoleTeacher))
+	mux.HandleFunc("/api/teacher/subject", s.withAuth(s.handleTeacherSubject, RoleTeacher))
 	mux.HandleFunc("/api/teacher/grades", s.withAuth(s.handleTeacherGradeCreate, RoleTeacher))
+	mux.HandleFunc("/api/teacher/grades/journal", s.withAuth(s.handleTeacherGradesJournal, RoleTeacher))
 	mux.HandleFunc("/api/teacher/homework", s.withAuth(s.handleTeacherHomeworkCreate, RoleTeacher))
 	mux.HandleFunc("/api/teacher/students", s.withAuth(s.handleTeacherStudents, RoleTeacher))
 

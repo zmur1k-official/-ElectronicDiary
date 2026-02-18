@@ -21,6 +21,7 @@ type Storage struct {
 	photos   map[string]SchedulePhoto
 	grades   map[int64]Grade
 	homework map[int64]Homework
+	subjects map[int64]string
 
 	nextUserID     int64
 	nextScheduleID int64
@@ -38,6 +39,7 @@ func NewStorage() *Storage {
 		photos:   make(map[string]SchedulePhoto),
 		grades:   make(map[int64]Grade),
 		homework: make(map[int64]Homework),
+		subjects: make(map[int64]string),
 
 		nextUserID:     1,
 		nextScheduleID: 1,
@@ -46,6 +48,46 @@ func NewStorage() *Storage {
 	}
 	s.seed()
 	return s
+}
+
+// getTeacherSubject возвращает закрепленный предмет учителя.
+func (s *Storage) getTeacherSubject(teacherID int64) string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return strings.TrimSpace(s.subjects[teacherID])
+}
+
+// setTeacherSubject сохраняет закрепленный предмет учителя.
+func (s *Storage) setTeacherSubject(teacherID int64, subject string) string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	subject = strings.TrimSpace(subject)
+	s.subjects[teacherID] = subject
+	return subject
+}
+
+// listGradesByTeacherSubjectDateRange возвращает оценки учителя по предмету и диапазону дат.
+func (s *Storage) listGradesByTeacherSubjectDateRange(teacherID int64, subject, dateFrom, dateTo string) []Grade {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	subject = strings.TrimSpace(subject)
+	res := make([]Grade, 0)
+	for _, g := range s.grades {
+		if g.TeacherID != teacherID {
+			continue
+		}
+		if strings.TrimSpace(g.Subject) != subject {
+			continue
+		}
+		if dateFrom != "" && g.Date < dateFrom {
+			continue
+		}
+		if dateTo != "" && g.Date > dateTo {
+			continue
+		}
+		res = append(res, g)
+	}
+	return res
 }
 
 // seed добавляет стартовые данные (дефолтного администратора).

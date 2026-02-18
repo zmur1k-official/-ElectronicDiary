@@ -85,3 +85,72 @@ pre {
   border-radius: 8px;
   background: #f9fbff;
 }
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e2e8f4;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.grade-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 520px;
+}
+
+.grade-table th,
+.grade-table td {
+  border: 1px solid #e2e8f4;
+  padding: 8px;
+  text-align: center;
+}
+
+.grade-table th {
+  background: #f3f6fd;
+  font-weight: 600;
+}
+
+.grade-table tbody th {
+  text-align: left;
+  white-space: nowrap;
+}
+
+.empty-cell {
+  color: #8a95a8;
+}
+
+.grade-badge {
+  display: inline-block;
+  min-width: 28px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #e9f1ff;
+  border: 1px solid #c8dbff;
+  font-weight: 600;
+}
+
+.grade-cell {
+  width: 100%;
+  min-width: 40px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.grade-cell.has-grade {
+  background: #1f6feb;
+  color: #fff;
+}
+
+.grade-cell.empty-grade {
+  background: #eef3ff;
+  color: #405375;
+  border: 1px dashed #afbdd9;
+}
+
+.hint {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #4e5f80;
+}
