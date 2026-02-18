@@ -1,0 +1,54 @@
+﻿<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Электронный дневник</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>Электронный дневник</h1>
+      <div class="session">
+        <span id="sessionUser">Не авторизован</span>
+        <button id="logoutBtn" class="hidden">Выйти</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <section id="authSection" class="card">
+        <h2>Вход</h2>
+        <form id="loginForm" class="grid">
+          <label>Email<input name="email" type="email" required /></label>
+          <label>Пароль<input name="password" type="password" required /></label>
+          <button type="submit">Войти</button>
+        </form>
+
+        <h2>Регистрация</h2>
+        <form id="registerForm" class="grid">
+          <label>ФИО<input name="fullName" required /></label>
+          <label>Email<input name="email" type="email" required /></label>
+          <label>Пароль<input name="password" type="password" required /></label>
+          <label>Роль
+            <select name="role" id="registerRole">
+              <option value="student">Ученик</option>
+              <option value="teacher">Учитель</option>
+              <option value="admin">Админ</option>
+            </select>
+          </label>
+          <label id="classLabel">Класс<input name="className" placeholder="например, 7A" /></label>
+          <button type="submit">Зарегистрироваться</button>
+        </form>
+      </section>
+
+      <section id="dashboard" class="hidden"></section>
+
+      <section class="card">
+        <h3>Сообщения</h3>
+        <pre id="log"></pre>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
